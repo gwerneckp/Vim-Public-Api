@@ -34,7 +34,7 @@ export async function activate(context: vscode.ExtensionContext) {
   // Set the storage path to be used by history files
   Globals.extensionStoragePath = context.globalStorageUri.fsPath;
 
-  await activateFunc(context);
+  const publicApi = await activateFunc(context);
 
   registerEventListener(context, vscode.workspace.onDidSaveTextDocument, async (document) => {
     if (vimrc.vimrcPath && path.relative(document.fileName, vimrc.vimrcPath) === '') {
@@ -56,6 +56,8 @@ export async function activate(context: vscode.ExtensionContext) {
     },
     false,
   );
+
+  return publicApi;
 }
 
 export async function deactivate() {

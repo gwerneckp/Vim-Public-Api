@@ -27,6 +27,11 @@ interface ICodeKeybinding {
   commands?: Array<{ command: string; args: any[] }>;
 }
 
+export interface PublicApi {
+  getMode(): Promise<string>;
+  setMode(mode: Mode): Promise<void>;
+}
+
 export async function getAndUpdateModeHandler(
   forceSyncAndUpdate = false,
 ): Promise<ModeHandler | undefined> {
@@ -93,7 +98,10 @@ export async function loadConfiguration() {
 /**
  * The extension's entry point
  */
-export async function activate(context: vscode.ExtensionContext, handleLocal: boolean = true) {
+export async function activate(
+  context: vscode.ExtensionContext,
+  handleLocal: boolean = true,
+): Promise<PublicApi> {
   ExCommandLine.parser = exCommandParser;
 
   Logger.init();
@@ -540,6 +548,19 @@ export async function activate(context: vscode.ExtensionContext, handleLocal: bo
   await toggleExtension(configuration.disableExtension, compositionState);
 
   Logger.debug('Finish.');
+
+  return {
+    getMode: async () => {
+      const mh = await getAndUpdateModeHandler();
+      return Mode[mh ? mh.vimState.currentMode : Mode.Normal];
+    },
+    setMode: async (mode: Mode) => {
+      const mh = await getAndUpdateModeHandler();
+      if (mh) {
+        await mh.setCurrentMode(mode);
+      }
+    },
+  };
 }
 
 /**
