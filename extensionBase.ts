@@ -27,9 +27,12 @@ interface ICodeKeybinding {
   commands?: Array<{ command: string; args: any[] }>;
 }
 
+// i want event string
 export interface PublicApi {
-  getMode(): Promise<string>;
+  getModeEnum(): typeof Mode;
+  getMode(): Promise<Mode>;
   setMode(mode: Mode): Promise<void>;
+  onModeChange?(callback: (mode: Mode) => void): void;
 }
 
 export async function getAndUpdateModeHandler(
@@ -550,15 +553,33 @@ export async function activate(
   Logger.debug('Finish.');
 
   return {
+    getModeEnum: () => {
+      return Mode;
+    },
     getMode: async () => {
       const mh = await getAndUpdateModeHandler();
-      return Mode[mh ? mh.vimState.currentMode : Mode.Normal];
+      if (!mh) {
+        return Mode.Normal;
+      }
+
+      return mh.currentMode;
     },
     setMode: async (mode: Mode) => {
       const mh = await getAndUpdateModeHandler();
       if (mh) {
         await mh.setCurrentMode(mode);
       }
+    },
+    onModeChange: (callback: (mode: Mode) => void) => {
+      getAndUpdateModeHandler()
+        .then((mh) => {
+          if (mh) {
+            mh.setOnModeChange(callback);
+          }
+        })
+        .catch((e: string) => {
+          Logger.error(e);
+        });
     },
   };
 }
